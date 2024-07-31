@@ -1,5 +1,6 @@
 # Ignore these files
 .env
 Pipfile.lock
+venv/
 __pycache__/
 
