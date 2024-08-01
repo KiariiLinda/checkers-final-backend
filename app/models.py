@@ -19,11 +19,3 @@ class Games(db.Model):
     board_state = db.Column(db.Text, nullable=False)
     human_won = db.Column(db.Boolean, nullable=True)
 
-class Moves(db.Model):
-    __tablename__ = 'moves'
-    id = db.Column(db.BigInteger, primary_key=True)
-    game_id = db.Column(db.BigInteger,db.ForeignKey('games.id',ondelete='CASCADE'),nullable=False)
-    player_id = db.Column(db.BigInteger, db.ForeignKey('users.id', nullable=False))
-    move_number = db.Column(db.String, nullable=False)
-    from_position = db.Column(db.String, nullable=False)
-    to_position = db.Column(db.String, nullable=False)
