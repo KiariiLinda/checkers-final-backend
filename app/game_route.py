@@ -62,11 +62,17 @@ def make_move():
         # Check if the move is valid for the piece
         if(piece_type == '○' and dest_row >= src_row) or (piece_type == '●' and dest_row <= src_row):
             return jsonify({'message': 'Invalid move. Piece can only move forward.'}), 400
+          # Check if the move is diagonal
+        if abs(dest_row - src_row) != abs(dest_col - src_col):
+            return jsonify({'message': 'Invalid move. Piece can only move diagonally.'}), 400
 
         # Check if the destination is occupied by an opponent's piece
         dest_piece_type = board[dest_row][dest_col]
         if dest_piece_type and ((game.current_user == 'Human' and dest_piece_type == '●') or (game.current_user == 'Computer' and dest_piece_type == '○')):
             return jsonify({'message': 'Invalid move. Destination is occupied by an opponent\'s piece.'}), 400
+        
+        captured_piece = None
+        capturing_player = None
 
         # Check if the move is a capture move
         if abs(dest_row - src_row) == 2 and abs(dest_col - src_col) == 2:
@@ -77,10 +83,16 @@ def make_move():
                 return jsonify({'message': 'Invalid move. Capture move is not valid.'}), 400
 
             # Perform the capture move
+            captured_piece = mid_piece_type
+            capturing_player = game.current_user
             board[mid_row][mid_col] = ' '  # Clear the captured piece
             board[dest_row][dest_col] = piece_type
             board[src_row][src_col] = ' '  # Clear the source position
         else:
+             # Check if the destination is empty
+            if board[dest_row][dest_col] != ' ':
+                return jsonify({'message': 'Invalid move. Destination is not empty.'}), 400
+
             # Perform the regular move on the board
             board[dest_row][dest_col] = piece_type
             board[src_row][src_col] = ' '  # Clear the source position
@@ -96,9 +108,14 @@ def make_move():
 
         print_board(board)
 
-        return jsonify({'message': 'Move made successfully','board': board})
+        response_message = 'Move made successfully'
+        if captured_piece:
+            response_message += f'. {capturing_player} captured piece: {captured_piece}'
+
+        return jsonify({'message': response_message, 'board': board})
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+        
     
     
 def print_board(board):
