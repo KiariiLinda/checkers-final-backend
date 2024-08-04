@@ -73,7 +73,7 @@ def make_move():
             mid_row = (src_row + dest_row) // 2
             mid_col = (src_col + dest_col) // 2
             mid_piece_type = board[mid_row][mid_col]
-            if not mid_piece_type or ((game.current_user == 'Human' and mid_piece_type != '●') or (game.current_user == 'Computer' and mid_piece_type != 'h')):
+            if not mid_piece_type or ((game.current_user == 'Human' and mid_piece_type != '●') or (game.current_user == 'Computer' and mid_piece_type != '○')):
                 return jsonify({'message': 'Invalid move. Capture move is not valid.'}), 400
 
             # Perform the capture move
