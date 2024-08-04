@@ -6,6 +6,7 @@ from .models import Users, Games
 import json
 
 
+
 auth_blueprint = Blueprint('auth', __name__)
 
 @auth_blueprint.route("/signup", methods=["POST"])

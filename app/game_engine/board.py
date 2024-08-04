@@ -12,14 +12,16 @@ def create_board():
             if (row + col) % 2 == 1:
                 board[row][col] = '○'  # Human pieces
   return board
-            
-def display_board(board):
-    print("  A B C D E F G H")
-    print(" +-----------------+")
-    for i in range(8):
-        print(f"{i + 1}|", ' '.join(board[i]), "|")  # Adjusted to print rows 1-8 in order
-        print(" +-----------------+")
 
+#Create and print the checkers board            
+def display_board(board):
+    print("    A   B   C   D   E   F   G   H")
+    print("  +---+---+---+---+---+---+---+---+")
+    for idx, row in enumerate(board):
+        print(f"{idx+1} | {' | '.join(row)} | {idx+1}")
+        print("  +---+---+---+---+---+---+---+---+")
+    print("    A   B   C   D   E   F   G   H")   
+   
 checkers_board = create_board()
 display_board(checkers_board)                 
 
