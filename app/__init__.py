@@ -26,9 +26,7 @@ def create_app():
     
     from .auth_route import auth_blueprint
     from .game_route import game_blueprint
-
-  
-
+    
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(game_blueprint)
    
