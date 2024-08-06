@@ -37,7 +37,7 @@ def get_board():
     return jsonify({
         'message': f"Hi {current_user['username']}, this is your board", 
         'board': board,
-        'current_turn': current_turn,  # Add a comma here
+        'current_turn': current_turn,
         'moves_without_capture': game.moves_without_capture
     })
 
@@ -52,7 +52,6 @@ def make_move_route():
         if not game:
             return jsonify({'message': 'Game not found'}), 404
 
-        # Check if the game is already over
         if game.game_over:
             return jsonify({
                 'message': 'This game has already ended',
@@ -79,22 +78,27 @@ def make_move_route():
         # Check if the human move was a capture
         human_capture = move_result.get('capture', False)
 
+        print(f"Human capture: {human_capture}") 
         print("Board after human move:")
         print_board(board)
 
         # Computer's turn
         computer_moves = []
         computer_move, checkers_notation = get_computer_move(board)
-        computer_capture = False
+        capture_occurred = False  # Initialize capture_occurred to False by default
+
         if computer_move:
             print(f"Computer move: {checkers_notation}")
-            computer_result = make_move(board, computer_move)
-            
-            if isinstance(computer_result, dict):
-                board = computer_result.get('board', board)
-                computer_capture = computer_result.get('capture', False)
-            else:
-                board = computer_result
+            try:
+                board, capture_occurred = make_move(board, computer_move)
+            except ValueError as e:
+                print(f"Error in make_move: {str(e)}")
+                # Handle the error appropriately, maybe skip the move or end the game
+            except Exception as e:
+                print(f"Unexpected error in make_move: {str(e)}")
+                # Handle other unexpected errors
+        
+            print(f"Computer capture: {capture_occurred}")
 
             print("Board after computer move:")
             print_board(board)
@@ -103,10 +107,13 @@ def make_move_route():
             print("No valid computer move found")
 
         # Update moves_without_capture
-        if human_capture or computer_capture:
+        if human_capture or capture_occurred:
             game.moves_without_capture = 0
+            print(f"Capture occurred! Human: {human_capture}, Computer: {capture_occurred}")
+            print("Resetting moves_without_capture to 0")
         else:
             game.moves_without_capture += 1
+            print(f"No capture occurred. Incrementing moves_without_capture to {game.moves_without_capture}")
 
         # Save the updated board state
         game.board_state = json.dumps(board)
@@ -123,7 +130,7 @@ def make_move_route():
             game.game_over = True
             game.winner = 'human'
             print("Game Over! Human wins!")
-        elif game.moves_without_capture >= 80:  # Draw condition
+        elif game.moves_without_capture >= 60:  # Draw condition
             game.game_over = True
             game.winner = 'draw'
             print("Game Over! It's a draw!")
@@ -228,12 +235,14 @@ def perform_move(board, src, dest):
     if abs(src_row - dest_row) > 2:
         return {'success': False, 'message': 'Invalid move distance'}
 
-    # If it's a capture move, check if there's an opponent's piece to capture
+    # Check for capture move
+    capture = False
     if abs(src_row - dest_row) == 2:
         captured_row = (src_row + dest_row) // 2
         captured_col = (src_col + dest_col) // 2
         if board[captured_row][captured_col].lower() != 'c':
             return {'success': False, 'message': 'Invalid capture move'}
+        capture = True
 
     # Move is valid, update the board
     piece = board[src_row][src_col]
@@ -241,23 +250,11 @@ def perform_move(board, src, dest):
     board[src_row][src_col] = ' '
 
     # Handle captures
-    if abs(src_row - dest_row) == 2:
-        captured_row = (src_row + dest_row) // 2
-        captured_col = (src_col + dest_col) // 2
+    if capture:
         board[captured_row][captured_col] = ' '
 
     # Promote to king if reached the opposite end
     if piece.lower() == 'h' and dest_row == 0:
         board[dest_row][dest_col] = piece.upper()
 
-    return {'success': True}
-
-def print_board(board):
-    print("   A   B   C   D   E   F   G   H")
-    print(" +---+---+---+---+---+---+---+---+")
-    for row_index, row in enumerate(board):
-        row_str = f"{row_index + 1}|"
-        for cell in row:
-            row_str += f" {cell} |"
-        print(row_str)
-        print(" +---+---+---+---+---+---+---+---+")
+    return {'success': True, 'capture': capture}

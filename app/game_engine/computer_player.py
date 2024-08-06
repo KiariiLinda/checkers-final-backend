@@ -16,7 +16,7 @@ def minimax(board, depth, maximizing_player):
         max_eval = float('-inf')
         best_move = None
         for move in get_all_possible_moves(board, 'c'):
-            new_board = make_move(board, move)
+            new_board, capture_occurred = make_move(board, move)
             eval, _ = minimax(new_board, depth - 1, False)
             if eval > max_eval:
                 max_eval = eval
@@ -26,7 +26,7 @@ def minimax(board, depth, maximizing_player):
         min_eval = float('inf')
         best_move = None
         for move in get_all_possible_moves(board, 'h'):
-            new_board = make_move(board, move)
+            new_board, capture_occurred = make_move(board, move)
             eval, _ = minimax(new_board, depth - 1, True)
             if eval < min_eval:
                 min_eval = eval
@@ -56,9 +56,55 @@ def get_computer_move(board):
         return None, None
 
 def evaluate_board(board):
-    c_count = sum(row.count('c') for row in board)
-    h_count = sum(row.count('h') for row in board)
-    return c_count - h_count
+    c_count = 0
+    h_count = 0
+    c_kings = 0
+    h_kings = 0
+    c_back_row = 0
+    h_back_row = 0
+    c_center_control = 0
+    h_center_control = 0
+
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece == 'c':
+                c_count += 1
+                if row == 7:
+                    c_back_row += 1
+                if 2 <= row <= 5 and 2 <= col <= 5:
+                    c_center_control += 1
+            elif piece == 'C':
+                c_count += 1
+                c_kings += 1
+                if 2 <= row <= 5 and 2 <= col <= 5:
+                    c_center_control += 1.5  # Kings control center better
+            elif piece == 'h':
+                h_count += 1
+                if row == 0:
+                    h_back_row += 1
+                if 2 <= row <= 5 and 2 <= col <= 5:
+                    h_center_control += 1
+            elif piece == 'H':
+                h_count += 1
+                h_kings += 1
+                if 2 <= row <= 5 and 2 <= col <= 5:
+                    h_center_control += 1.5  # Kings control center better
+
+    # Weights for different factors
+    piece_weight = 100
+    king_weight = 30
+    back_row_weight = 10
+    center_control_weight = 20
+
+    # Calculate the score
+    score = (c_count - h_count) * piece_weight
+    score += (c_kings - h_kings) * king_weight
+    score += (c_back_row - h_back_row) * back_row_weight
+    score += (c_center_control - h_center_control) * center_control_weight
+
+    return score
+
 
 def game_over(board):
     return get_all_possible_moves(board, 'c') == [] and get_all_possible_moves(board, 'h') == []
@@ -121,16 +167,18 @@ def make_move(board, move):
     new_board[start_row][start_col] = ' '
 
     # Handle captures
+    capture_occurred = False
     if abs(start_row - end_row) == 2:
         mid_row = (start_row + end_row) // 2
         mid_col = (start_col + end_col) // 2
         new_board[mid_row][mid_col] = ' '  # Remove the captured piece
+        capture_occurred = True
 
     # Promote to king if reached the opposite end
     if (piece == 'c' and end_row == 7) or (piece == 'h' and end_row == 0):
         new_board[end_row][end_col] = piece.upper()
 
-    return new_board
+    return new_board, capture_occurred
 
 def print_board(board):
     print("   A   B   C   D   E   F   G   H")
