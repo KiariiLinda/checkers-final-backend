@@ -159,7 +159,60 @@ def make_move_route():
             'error': str(e),
             'traceback': error_traceback
         }), 500
+
+@game_blueprint.route("/game/possible_moves", methods=["GET"])
+@jwt_required()
+def get_possible_moves():
+    current_user = get_jwt_identity()
+    game = Games.query.filter_by(player_id=current_user['id']).first()
+
+    if not game:
+        return jsonify({'message': 'Game not found'}), 404
+
+    board = json.loads(game.board_state)
+    possible_moves = get_possible_human_moves(board)
+
+    return jsonify({
+        'possible_moves': possible_moves
+    })
+
+def get_possible_human_moves(board):
+    possible_moves = []
+    for row in range(8):
+        for col in range(8):
+            if board[row][col].lower() == 'h':
+                piece_moves = get_piece_moves(board, row, col)
+                if piece_moves:
+                    from_pos = coord_to_checkers_notation(row, col)
+                    for to_pos in piece_moves:
+                        possible_moves.append({
+                            'from': from_pos,
+                            'to': coord_to_checkers_notation(to_pos[0], to_pos[1])
+                        })
+    return possible_moves
+
+def get_piece_moves(board, row, col):
+    moves = []
+    piece = board[row][col]
+    is_king = piece.isupper()
+    directions = [(-1, -1), (-1, 1)] if not is_king else [(-1, -1), (-1, 1), (1, -1), (1, 1)]
     
+    # Check for normal moves
+    for dr, dc in directions:
+        new_row, new_col = row + dr, col + dc
+        if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == ' ':
+            moves.append((new_row, new_col))
+    
+    # Check for capture moves
+    for dr, dc in directions:
+        new_row, new_col = row + dr, col + dc
+        if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col].lower() == 'c':
+            jump_row, jump_col = new_row + dr, new_col + dc
+            if 0 <= jump_row < 8 and 0 <= jump_col < 8 and board[jump_row][jump_col] == ' ':
+                moves.append((jump_row, jump_col))
+    
+    return moves
+
 @game_blueprint.route("/game/reset", methods=["POST"])
 @jwt_required()
 def reset_game():
