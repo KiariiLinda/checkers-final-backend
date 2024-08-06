@@ -18,7 +18,6 @@ def determine_turn(board):
     c_count = sum(row.count('c') + row.count('C') for row in board)
     return 'h' if h_count >= c_count else 'c'
 
-
 @game_blueprint.route("/game/board", methods=["GET"])
 @jwt_required()
 def get_board():
@@ -41,7 +40,6 @@ def get_board():
         'current_turn': current_turn,  # Add a comma here
         'moves_without_capture': game.moves_without_capture
     })
-
 
 @game_blueprint.route("/game/make_move", methods=["PUT"])
 @jwt_required()
@@ -154,6 +152,55 @@ def make_move_route():
             'error': str(e),
             'traceback': error_traceback
         }), 500
+    
+@game_blueprint.route("/game/reset", methods=["POST"])
+@jwt_required()
+def reset_game():
+    current_user = get_jwt_identity()
+    game = Games.query.filter_by(player_id=current_user['id']).first()
+
+    if not game:
+        return jsonify({'message': 'No game found to reset'}), 404
+
+    # Create a fresh board to compare with
+    initial_board_state = create_checkers_board()
+
+    # Check if the current board is already in the initial state
+    if (game.board_state == json.dumps(initial_board_state) and
+        game.moves_without_capture == 0 and
+        not game.game_over and
+        game.winner is None):
+        print("Reset attempted, but board was already in initial state.")
+        return jsonify({'message': 'Board was already reset'}), 400
+
+    # If not in initial state, reset the game
+    game.board_state = json.dumps(initial_board_state)
+    game.moves_without_capture = 0
+    game.game_over = False
+    game.winner = None
+
+    db.session.commit()
+
+    print("Game has been reset!")
+    print("Fresh board state:")
+    print_board(initial_board_state)
+
+    return jsonify({
+        'message': 'Game has been reset',
+        'board': initial_board_state,
+        'current_turn': 'h',
+        'moves_without_capture': 0,
+        'game_over': False
+    })
+
+def print_board(board):
+    print("   A   B   C   D   E   F   G   H")
+    print(" +---+---+---+---+---+---+---+---+")
+    for i, row in enumerate(board):
+        print(f"{i+1}|", end="")
+        for cell in row:
+            print(f" {cell} |", end="")
+        print(f"\n +---+---+---+---+---+---+---+---+")
 
 def perform_move(board, src, dest):
     src_row, src_col = src
