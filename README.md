@@ -33,6 +33,13 @@ This is a Flask-based project for a Checkers game. It provides endpoints to mana
 - **Authentication:** JWT required
 - **Description:** Resets the game to its initial state.
 
+### 4. Get Possible Moves
+
+- **URL:** `/game/possible_moves`
+- **Method:** GET
+- **Authentication:** JWT required
+- **Description:** Retrieves all possible moves for the human player based on the current board state.
+
 ## Game Logic
 
 - The game uses a standard 8x8 Checkers board.
