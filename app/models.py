@@ -17,5 +17,6 @@ class Games(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     player_id = db.Column(db.BigInteger,db.ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
     board_state = db.Column(db.Text, nullable=False)
-    human_won = db.Column(db.Boolean, nullable=True)
-
+    moves_without_capture = db.Column(db.Integer, default=0)
+    game_over = db.Column(db.Boolean, default=False)
+    winner = db.Column(db.String(10), nullable=True)
