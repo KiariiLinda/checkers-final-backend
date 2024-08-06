@@ -69,12 +69,12 @@ Set up the backend:
 
 ## Acknowledgments
 
-> [Marc Ndegwa](https://github.com/teeno-vices) - Developer
+> [Marc Ndegwa](https://github.com/teeno-vices) - Software Engineer
 >
-> [Jalen Mnene](https://github.com/Jalenzzz) - Developer
+> [Jalen Mnene](https://github.com/Jalenzzz) - Software Engineer
 >
-> [Linda Kiarii](https://github.com/KiariiLinda) - Developer
+> [Linda Kiarii](https://github.com/KiariiLinda) - Project Lead/Software Engineer
 >
-> [Immanuel Anyangu](https://github.com/Meshmanuu) - Developer
+> [Immanuel Anyangu](https://github.com/Meshmanuu) - Software Engineer
 >
-> [Luther Isaboke](https://github.com/kib4n4) - Developer
+> [Luther Isaboke](https://github.com/kib4n4) - Software Engineer
