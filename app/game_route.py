@@ -27,7 +27,7 @@ def get_board():
 
     if not game:
         initial_board_state = create_checkers_board()
-        new_game = Games(player_id=current_user['id'], board_state=json.dumps(initial_board_state))
+        new_game = Games(player_id=current_user['id'], board_state=json.dumps(initial_board_state), moves_without_capture=0)
         db.session.add(new_game)
         db.session.commit()
         game = new_game
@@ -38,12 +38,14 @@ def get_board():
     return jsonify({
         'message': f"Hi {current_user['username']}, this is your board", 
         'board': board,
-        'current_turn': current_turn
+        'current_turn': current_turn,  # Add a comma here
+        'moves_without_capture': game.moves_without_capture
     })
+
 
 @game_blueprint.route("/game/make_move", methods=["PUT"])
 @jwt_required()
-def make_move_route():  # Renamed to avoid conflict with imported make_move
+def make_move_route():
     try:
         data = request.get_json()
         current_user = get_jwt_identity()
@@ -51,6 +53,14 @@ def make_move_route():  # Renamed to avoid conflict with imported make_move
 
         if not game:
             return jsonify({'message': 'Game not found'}), 404
+
+        # Check if the game is already over
+        if game.game_over:
+            return jsonify({
+                'message': 'This game has already ended',
+                'game_over': True,
+                'winner': game.winner
+            }), 400
 
         board = json.loads(game.board_state)
 
@@ -68,37 +78,70 @@ def make_move_route():  # Renamed to avoid conflict with imported make_move
         if not move_result['success']:
             return jsonify({'message': move_result['message']}), 400
 
+        # Check if the human move was a capture
+        human_capture = move_result.get('capture', False)
+
         print("Board after human move:")
         print_board(board)
 
         # Computer's turn
         computer_moves = []
         computer_move, checkers_notation = get_computer_move(board)
+        computer_capture = False
         if computer_move:
             print(f"Computer move: {checkers_notation}")
-            board = make_move(board, computer_move)
+            computer_result = make_move(board, computer_move)
+            
+            if isinstance(computer_result, dict):
+                board = computer_result.get('board', board)
+                computer_capture = computer_result.get('capture', False)
+            else:
+                board = computer_result
+
             print("Board after computer move:")
             print_board(board)
             computer_moves.append(checkers_notation)
         else:
             print("No valid computer move found")
 
+        # Update moves_without_capture
+        if human_capture or computer_capture:
+            game.moves_without_capture = 0
+        else:
+            game.moves_without_capture += 1
+
         # Save the updated board state
         game.board_state = json.dumps(board)
-        db.session.commit()
 
         # Check for game over
         h_count = sum(row.count('h') + row.count('H') for row in board)
         c_count = sum(row.count('c') + row.count('C') for row in board)
-        if h_count == 0 or c_count == 0:
-            game.human_won = (h_count > 0)
-            db.session.commit()
+        
+        if h_count == 0:
+            game.game_over = True
+            game.winner = 'computer'
+            print("Game Over! Computer wins!")
+        elif c_count == 0:
+            game.game_over = True
+            game.winner = 'human'
+            print("Game Over! Human wins!")
+        elif game.moves_without_capture >= 80:  # Draw condition
+            game.game_over = True
+            game.winner = 'draw'
+            print("Game Over! It's a draw!")
+
+        db.session.commit()
+
+        if game.game_over:
+            print(f"Game ended. Winner: {game.winner}")
 
         return jsonify({
             'message': 'Moves made successfully', 
             'board': board,
-            'game_over': game.human_won is not None,
-            'computer_moves': computer_moves
+            'game_over': game.game_over,
+            'winner': game.winner,
+            'computer_moves': computer_moves,
+            'moves_without_capture': game.moves_without_capture
         })
 
     except Exception as e:
@@ -112,7 +155,6 @@ def make_move_route():  # Renamed to avoid conflict with imported make_move
             'traceback': error_traceback
         }), 500
 
-   
 def perform_move(board, src, dest):
     src_row, src_col = src
     dest_row, dest_col = dest
@@ -162,8 +204,6 @@ def perform_move(board, src, dest):
         board[dest_row][dest_col] = piece.upper()
 
     return {'success': True}
-
-
 
 def print_board(board):
     print("   A   B   C   D   E   F   G   H")

@@ -5,8 +5,6 @@ from datetime import timedelta,datetime
 from .models import Users, Games
 import json
 
-
-
 auth_blueprint = Blueprint('auth', __name__)
 
 @auth_blueprint.route("/signup", methods=["POST"])
@@ -57,8 +55,6 @@ def signin():
         return jsonify({'message': "User not found"}), 400
         
     pass_ok = bcrypt.check_password_hash(user.password, password)
-
-
 
     # ACCESS TOKEN
     expires = timedelta(hours=24)

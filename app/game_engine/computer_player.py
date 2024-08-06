@@ -55,8 +55,6 @@ def get_computer_move(board):
         print("No valid moves found for computer")
         return None, None
 
-
-
 def evaluate_board(board):
     c_count = sum(row.count('c') for row in board)
     h_count = sum(row.count('h') for row in board)
@@ -69,9 +67,9 @@ def get_all_possible_moves(board, player):
     moves = []
     for row in range(8):
         for col in range(8):
-            if board[row][col] == player:  # 'c' for computer, 'h' for human
+            if board[row][col].lower() == player:  # Check for both 'c' and 'C' for computer
                 is_king = board[row][col].isupper()  # Assume king pieces are uppercase
-                
+                   
                 # Define move directions based on player and piece type
                 if player == 'c':
                     directions = [(1, -1), (1, 1)] if not is_king else [(-1, -1), (-1, 1), (1, -1), (1, 1)]
@@ -91,8 +89,6 @@ def get_all_possible_moves(board, player):
                         board[new_row][new_col] != player):
                         moves.append(((row, col), (jump_row, jump_col)))
     return moves
-
-
 
 def get_possible_moves(board, row, col):
     moves = []
