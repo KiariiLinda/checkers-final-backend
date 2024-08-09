@@ -135,7 +135,7 @@ def make_move_route():
             game.game_over = True
             game.winner = 'human'
             print("Game Over! Human wins!")
-        elif game.moves_without_capture >= 60:  # Draw condition
+        elif game.moves_without_capture >= 40:  # Draw condition
             game.game_over = True
             game.winner = 'draw'
             print("Game Over! It's a draw!")
