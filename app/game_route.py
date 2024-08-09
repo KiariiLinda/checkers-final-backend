@@ -115,6 +115,11 @@ def make_move_route():
             game.moves_without_capture += 1
             print(f"No capture occurred. Incrementing moves_without_capture to {game.moves_without_capture}")
 
+            # Increment for computer's move if no capture occurred
+            if not capture_occurred:
+                game.moves_without_capture += 1
+                print(f"Incrementing moves_without_capture again for computer's move to {game.moves_without_capture}")
+
         # Save the updated board state
         game.board_state = json.dumps(board)
 
