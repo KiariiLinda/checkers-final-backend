@@ -38,7 +38,9 @@ def get_board():
         'message': f"Hi {current_user['username']}, this is your board", 
         'board': board,
         'current_turn': current_turn,
-        'moves_without_capture': game.moves_without_capture
+        'moves_without_capture': game.moves_without_capture,
+        'game_over': game.game_over,
+        'winner': game.winner
     })
 
 @game_blueprint.route("/game/make_human_move", methods=["PUT"])
@@ -158,6 +160,15 @@ def make_computer_move():
         else:
             print("No valid computer move found")
             return jsonify({'message': 'No valid computer move found'}), 400
+        
+        if computer_move is None:
+            print("No valid computer move found")
+            return jsonify({
+                'message': 'No valid computer move found. The game may be over.',
+                'game_over': True,
+                'winner': 'human'  # Assuming if computer can't move, human wins
+            }), 200
+
 
         # Update moves_without_capture
         if capture_occurred:
@@ -172,12 +183,15 @@ def make_computer_move():
         h_count = sum(row.count('h') + row.count('H') for row in board)
         c_count = sum(row.count('c') + row.count('C') for row in board)
         
-        if h_count == 0:
+        # Check for game over after computer's move
+        if c_count == 0 or h_count == 0 or game.moves_without_capture >= 40:
             game.game_over = True
-            game.winner = 'computer'
-        elif game.moves_without_capture >= 40:  # Draw condition
-            game.game_over = True
-            game.winner = 'draw'
+            if c_count == 0:
+                game.winner = 'human'
+            elif h_count == 0:
+                game.winner = 'computer'
+            else:
+                game.winner = 'draw'
 
         db.session.commit()
 
