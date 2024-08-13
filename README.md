@@ -19,19 +19,19 @@ This is a Flask-based project for a Checkers game. It provides endpoints to mana
 - **Authentication:** JWT required
 - **Description:** Retrieves the current board state for the authenticated user.
 
-### 2. Make Move
+### 2. Make Human Move
 
-- **URL:** `/game/make_move`
+- **URL:** `/game/make_human_move`
 - **Method:** PUT
 - **Authentication:** JWT required
 - **Description:** Allows the human player to make a move and triggers the computer's move.
 
-### 3. Reset Game
+### 3. Make Computer Move
 
-- **URL:** `/game/reset`
-- **Method:** POST
+- **URL:** `/game/make_computer_move`
+- **Method:** GET
 - **Authentication:** JWT required
-- **Description:** Resets the game to its initial state.
+- **Description:** Makes a move for the computer player and returns the updated board state.
 
 ### 4. Get Possible Moves
 
@@ -39,6 +39,13 @@ This is a Flask-based project for a Checkers game. It provides endpoints to mana
 - **Method:** GET
 - **Authentication:** JWT required
 - **Description:** Retrieves all possible moves for the human player based on the current board state.
+
+### 5. Reset Game
+
+- **URL:** `/game/reset`
+- **Method:** POST
+- **Authentication:** JWT required
+- **Description:** Resets the game to its initial state.
 
 ## Game Logic
 
