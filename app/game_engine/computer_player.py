@@ -8,7 +8,7 @@ def checkers_notation_to_coord(notation):
     row = int(notation[1]) - 1
     return row, col
 
-def minimax(board, depth, maximizing_player):
+def minimax(board, depth, maximizing_player, alpha=float('-inf'), beta=float('inf')):
     if depth == 0 or game_over(board):
         return evaluate_board(board), None
 
@@ -16,27 +16,35 @@ def minimax(board, depth, maximizing_player):
         max_eval = float('-inf')
         best_move = None
         for move in get_all_possible_moves(board, 'c'):
-            new_board, capture_occurred = make_move(board, move)
-            eval, _ = minimax(new_board, depth - 1, False)
+            new_board, _ = make_move(board, move)
+            eval, _ = minimax(new_board, depth - 1, False, alpha, beta)
             if eval > max_eval:
                 max_eval = eval
                 best_move = move
-        return max_eval, best_move
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break
+        return max_eval, best_move or get_all_possible_moves(board, 'c')[0]
     else:
         min_eval = float('inf')
         best_move = None
         for move in get_all_possible_moves(board, 'h'):
-            new_board, capture_occurred = make_move(board, move)
-            eval, _ = minimax(new_board, depth - 1, True)
+            new_board, _ = make_move(board, move)
+            eval, _ = minimax(new_board, depth - 1, True, alpha, beta)
             if eval < min_eval:
                 min_eval = eval
                 best_move = move
-        return min_eval, best_move  
+            beta = min(beta, eval)
+            if beta <= alpha:
+                break
+        return min_eval, best_move or get_all_possible_moves(board, 'h')[0]
+ 
 
 def get_computer_move(board):
     print("Getting computer move for board:")
     print_board(board)
     possible_moves = get_all_possible_moves(board, 'c')
+    print(f"Number of possible moves: {len(possible_moves)}")
     print("Possible moves for computer:")
     for move in possible_moves:
         src, dest = move
@@ -44,16 +52,26 @@ def get_computer_move(board):
     print()
 
     if possible_moves:
-        _, best_move = minimax(board, depth=3, maximizing_player=True)
-        src, dest = best_move
-        
-        # Convert to checkers notation
-        checkers_notation = f"{coord_to_checkers_notation(*src)} to {coord_to_checkers_notation(*dest)}"
-        print(f"Computer chose move: {checkers_notation}")
-        return best_move, checkers_notation
+        try:
+            eval_score, best_move = minimax(board, depth=3, maximizing_player=True)
+            if best_move is None:
+                print("Minimax returned no best move. Choosing first available move.")
+                best_move = possible_moves[0]
+            src, dest = best_move
+            checkers_notation = f"{coord_to_checkers_notation(*src)} to {coord_to_checkers_notation(*dest)}"
+            print(f"Computer chose move: {checkers_notation} with evaluation score: {eval_score}")
+            return best_move, checkers_notation
+        except Exception as e:
+            print(f"Error in minimax: {str(e)}")
+            print("Choosing first available move due to error.")
+            best_move = possible_moves[0]
+            src, dest = best_move
+            checkers_notation = f"{coord_to_checkers_notation(*src)} to {coord_to_checkers_notation(*dest)}"
+            return best_move, checkers_notation
     else:
         print("No valid moves found for computer")
         return None, None
+
 
 def evaluate_board(board):
     c_count = 0
