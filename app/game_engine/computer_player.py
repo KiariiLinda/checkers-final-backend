@@ -12,10 +12,18 @@ def minimax(board, depth, maximizing_player, alpha=float('-inf'), beta=float('in
     if depth == 0 or game_over(board):
         return evaluate_board(board), None
 
+    # Debugging output
+    print(f"Minimax depth: {depth}, maximizing_player: {maximizing_player}")
+    
     if maximizing_player:
         max_eval = float('-inf')
         best_move = None
-        for move in get_all_possible_moves(board, 'c'):
+        moves = get_all_possible_moves(board, 'c')
+        if not moves:
+            # No moves available, return evaluation for the current board
+            return evaluate_board(board), None
+        
+        for move in moves:
             new_board, _ = make_move(board, move)
             eval, _ = minimax(new_board, depth - 1, False, alpha, beta)
             if eval > max_eval:
@@ -24,11 +32,18 @@ def minimax(board, depth, maximizing_player, alpha=float('-inf'), beta=float('in
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break
-        return max_eval, best_move or get_all_possible_moves(board, 'c')[0]
+        # Ensure a move is returned, even if no moves were evaluated
+        best_move = best_move or moves[0]
+        return max_eval, best_move
     else:
         min_eval = float('inf')
         best_move = None
-        for move in get_all_possible_moves(board, 'h'):
+        moves = get_all_possible_moves(board, 'h')
+        if not moves:
+            # No moves available, return evaluation for the current board
+            return evaluate_board(board), None
+        
+        for move in moves:
             new_board, _ = make_move(board, move)
             eval, _ = minimax(new_board, depth - 1, True, alpha, beta)
             if eval < min_eval:
@@ -37,8 +52,9 @@ def minimax(board, depth, maximizing_player, alpha=float('-inf'), beta=float('in
             beta = min(beta, eval)
             if beta <= alpha:
                 break
-        return min_eval, best_move or get_all_possible_moves(board, 'h')[0]
- 
+        # Ensure a move is returned, even if no moves were evaluated
+        best_move = best_move or moves[0]
+        return min_eval, best_move
 
 def get_computer_move(board):
     print("Getting computer move for board:")
@@ -53,7 +69,7 @@ def get_computer_move(board):
 
     if possible_moves:
         try:
-            eval_score, best_move = minimax(board, depth=3, maximizing_player=True)
+            eval_score, best_move = minimax(board, depth=5, maximizing_player=True)
             if best_move is None:
                 print("Minimax returned no best move. Choosing first available move.")
                 best_move = possible_moves[0]
@@ -111,7 +127,7 @@ def evaluate_board(board):
 
     # Weights for different factors
     piece_weight = 100
-    king_weight = 30
+    king_weight = 200
     back_row_weight = 10
     center_control_weight = 20
 
@@ -122,7 +138,6 @@ def evaluate_board(board):
     score += (c_center_control - h_center_control) * center_control_weight
 
     return score
-
 
 def game_over(board):
     return get_all_possible_moves(board, 'c') == [] and get_all_possible_moves(board, 'h') == []
