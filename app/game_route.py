@@ -41,9 +41,9 @@ def get_board():
         'moves_without_capture': game.moves_without_capture
     })
 
-@game_blueprint.route("/game/make_move", methods=["PUT"])
+@game_blueprint.route("/game/make_human_move", methods=["PUT"])
 @jwt_required()
-def make_move_route():
+def make_human_move():
     try:
         data = request.get_json()
         current_user = get_jwt_identity()
@@ -82,10 +82,63 @@ def make_move_route():
         print("Board after human move:")
         print_board(board)
 
+        # Update moves_without_capture
+        if human_capture:
+            game.moves_without_capture = 0
+        else:
+            game.moves_without_capture += 1
+
+        # Save the updated board state
+        game.board_state = json.dumps(board)
+
+        # Check for game over
+        h_count = sum(row.count('h') + row.count('H') for row in board)
+        c_count = sum(row.count('c') + row.count('C') for row in board)
+        
+        if c_count == 0:
+            game.game_over = True
+            game.winner = 'human'
+        elif game.moves_without_capture >= 40:  # Draw condition
+            game.game_over = True
+            game.winner = 'draw'
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Human move made successfully', 
+            'board': board,
+            'game_over': game.game_over,
+            'winner': game.winner,
+            'moves_without_capture': game.moves_without_capture
+        })
+
+    except Exception as e:
+        print(f"Error in make_human_move: {str(e)}")
+        return jsonify({'message': 'An error occurred while making the human move'}), 500
+
+@game_blueprint.route("/game/make_computer_move", methods=["GET"])
+@jwt_required()
+def make_computer_move():
+    try:
+        current_user = get_jwt_identity()
+        game = Games.query.filter_by(player_id=current_user['id']).first()
+
+        if not game:
+            return jsonify({'message': 'Game not found'}), 404
+
+        if game.game_over:
+            return jsonify({
+                'message': 'This game has already ended',
+                'game_over': True,
+                'winner': game.winner
+            }), 400
+
+        board = json.loads(game.board_state)
+
         # Computer's turn
         computer_moves = []
         computer_move, checkers_notation = get_computer_move(board)
-        capture_occurred = False  # Initialize capture_occurred to False by default
+        capture_occurred = False
 
         if computer_move:
             print(f"Computer move: {checkers_notation}")
@@ -93,32 +146,24 @@ def make_move_route():
                 board, capture_occurred = make_move(board, computer_move)
             except ValueError as e:
                 print(f"Error in make_move: {str(e)}")
-                # Handle the error appropriately, maybe skip the move or end the game
+                return jsonify({'message': f'Error in computer move: {str(e)}'}), 400
             except Exception as e:
                 print(f"Unexpected error in make_move: {str(e)}")
-                # Handle other unexpected errors
-        
-            print(f"Computer capture: {capture_occurred}")
+                return jsonify({'message': f'Unexpected error in computer move: {str(e)}'}), 500
 
+            print(f"Computer capture: {capture_occurred}")
             print("Board after computer move:")
             print_board(board)
             computer_moves.append(checkers_notation)
         else:
             print("No valid computer move found")
+            return jsonify({'message': 'No valid computer move found'}), 400
 
         # Update moves_without_capture
-        if human_capture or capture_occurred:
+        if capture_occurred:
             game.moves_without_capture = 0
-            print(f"Capture occurred! Human: {human_capture}, Computer: {capture_occurred}")
-            print("Resetting moves_without_capture to 0")
         else:
             game.moves_without_capture += 1
-            print(f"No capture occurred. Incrementing moves_without_capture to {game.moves_without_capture}")
-
-            # Increment for computer's move if no capture occurred
-            if not capture_occurred:
-                game.moves_without_capture += 1
-                print(f"Incrementing moves_without_capture again for computer's move to {game.moves_without_capture}")
 
         # Save the updated board state
         game.board_state = json.dumps(board)
@@ -130,23 +175,14 @@ def make_move_route():
         if h_count == 0:
             game.game_over = True
             game.winner = 'computer'
-            print("Game Over! Computer wins!")
-        elif c_count == 0:
-            game.game_over = True
-            game.winner = 'human'
-            print("Game Over! Human wins!")
         elif game.moves_without_capture >= 40:  # Draw condition
             game.game_over = True
             game.winner = 'draw'
-            print("Game Over! It's a draw!")
 
         db.session.commit()
 
-        if game.game_over:
-            print(f"Game ended. Winner: {game.winner}")
-
         return jsonify({
-            'message': 'Moves made successfully', 
+            'message': 'Computer move made successfully', 
             'board': board,
             'game_over': game.game_over,
             'winner': game.winner,
@@ -155,15 +191,8 @@ def make_move_route():
         })
 
     except Exception as e:
-        import traceback
-        error_traceback = traceback.format_exc()
-        print(f"Error in make_move: {str(e)}")
-        print(f"Traceback:\n{error_traceback}")
-        return jsonify({
-            'message': 'An error occurred while making the move',
-            'error': str(e),
-            'traceback': error_traceback
-        }), 500
+        print(f"Error in make_computer_move: {str(e)}")
+        return jsonify({'message': 'An error occurred while making the computer move'}), 500
 
 @game_blueprint.route("/game/possible_moves", methods=["GET"])
 @jwt_required()
