@@ -9,9 +9,10 @@ from app.game_engine.computer_player import get_computer_move, checkers_notation
 game_blueprint = Blueprint('game', __name__)
 
 def count_pieces(board):
-    h_count = sum(row.count('h') for row in board)
-    c_count = sum(row.count('c') for row in board)
+    h_count = sum(row.count('h') + row.count('H') for row in board)
+    c_count = sum(row.count('c') + row.count('C') for row in board)
     return h_count, c_count
+
 
 def determine_turn(board):
     h_count = sum(row.count('h') + row.count('H') for row in board)
@@ -62,6 +63,7 @@ def make_human_move():
             }), 400
 
         board = json.loads(game.board_state)
+        initial_h_count, initial_c_count = count_pieces(board)  # Count pieces before the move
 
         # Human move
         src = data['src']
@@ -90,20 +92,23 @@ def make_human_move():
         else:
             game.moves_without_capture += 1
 
+        # Count pieces after the move
+        final_h_count, final_c_count = count_pieces(board)
+        pieces_captured = initial_c_count - final_c_count
+        game.human_captured_pieces = (game.human_captured_pieces or 0) + pieces_captured
+
         # Save the updated board state
         game.board_state = json.dumps(board)
 
         # Check for game over
-        h_count = sum(row.count('h') + row.count('H') for row in board)
-        c_count = sum(row.count('c') + row.count('C') for row in board)
-        
-        if c_count == 0:
+        if final_c_count == 0:
             game.game_over = True
             game.winner = 'human'
         elif game.moves_without_capture >= 40:  # Draw condition
             game.game_over = True
             game.winner = 'draw'
 
+        # Commit all changes to the database
         db.session.commit()
 
         return jsonify({
@@ -111,12 +116,15 @@ def make_human_move():
             'board': board,
             'game_over': game.game_over,
             'winner': game.winner,
-            'moves_without_capture': game.moves_without_capture
+            'moves_without_capture': game.moves_without_capture,
+            'human_captured_pieces': game.human_captured_pieces
         })
 
     except Exception as e:
         print(f"Error in make_human_move: {str(e)}")
+        db.session.rollback()  # Rollback in case of error
         return jsonify({'message': 'An error occurred while making the human move'}), 500
+
 
 @game_blueprint.route("/game/make_computer_move", methods=["GET"])
 @jwt_required()
@@ -136,6 +144,7 @@ def make_computer_move():
             }), 400
 
         board = json.loads(game.board_state)
+        initial_h_count, initial_c_count = count_pieces(board)  # Count pieces before the move
 
         # Computer's turn
         computer_moves = []
@@ -159,16 +168,11 @@ def make_computer_move():
             computer_moves.append(checkers_notation)
         else:
             print("No valid computer move found")
-            return jsonify({'message': 'No valid computer move found'}), 400
-        
-        if computer_move is None:
-            print("No valid computer move found")
             return jsonify({
                 'message': 'No valid computer move found. The game may be over.',
                 'game_over': True,
                 'winner': 'human'  # Assuming if computer can't move, human wins
             }), 200
-
 
         # Update moves_without_capture
         if capture_occurred:
@@ -176,22 +180,24 @@ def make_computer_move():
         else:
             game.moves_without_capture += 1
 
+        # Count pieces after the move
+        final_h_count, final_c_count = count_pieces(board)
+        pieces_captured = initial_h_count - final_h_count
+        game.computer_captured_pieces = (game.computer_captured_pieces or 0) + pieces_captured
+
         # Save the updated board state
         game.board_state = json.dumps(board)
 
         # Check for game over
-        h_count = sum(row.count('h') + row.count('H') for row in board)
-        c_count = sum(row.count('c') + row.count('C') for row in board)
-        
-        # Check for game over after computer's move
-        if c_count == 0 or h_count == 0 or game.moves_without_capture >= 40:
+        if final_h_count == 0:
             game.game_over = True
-            if c_count == 0:
-                game.winner = 'human'
-            elif h_count == 0:
-                game.winner = 'computer'
-            else:
-                game.winner = 'draw'
+            game.winner = 'computer'
+        elif final_c_count == 0:
+            game.game_over = True
+            game.winner = 'human'
+        elif game.moves_without_capture >= 40:  # Draw condition
+            game.game_over = True
+            game.winner = 'draw'
 
         db.session.commit()
 
@@ -201,7 +207,8 @@ def make_computer_move():
             'game_over': game.game_over,
             'winner': game.winner,
             'computer_moves': computer_moves,
-            'moves_without_capture': game.moves_without_capture
+            'moves_without_capture': game.moves_without_capture,
+            'computer_captured_pieces': game.computer_captured_pieces
         })
 
     except Exception as e:
@@ -286,6 +293,8 @@ def reset_game():
     game.moves_without_capture = 0
     game.game_over = False
     game.winner = None
+    game.human_captured_pieces = 0
+    game.computer_captured_pieces = 0
 
     db.session.commit()
 
@@ -294,12 +303,14 @@ def reset_game():
     print_board(initial_board_state)
 
     return jsonify({
-        'message': 'Game has been reset',
-        'board': initial_board_state,
-        'current_turn': 'h',
-        'moves_without_capture': 0,
-        'game_over': False
-    })
+    'message': 'Game has been reset',
+    'board': initial_board_state,
+    'current_turn': 'h',
+    'moves_without_capture': 0,
+    'game_over': False,
+    'human_captured_pieces': 0,
+    'computer_captured_pieces': 0
+})
 
 def print_board(board):
     print("   A   B   C   D   E   F   G   H")

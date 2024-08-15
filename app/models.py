@@ -20,3 +20,5 @@ class Games(db.Model):
     moves_without_capture = db.Column(db.Integer, default=0)
     game_over = db.Column(db.Boolean, default=False)
     winner = db.Column(db.String(10), nullable=True)
+    human_captured_pieces = db.Column(db.Integer, default=0)
+    computer_captured_pieces = db.Column(db.Integer, default=0)
