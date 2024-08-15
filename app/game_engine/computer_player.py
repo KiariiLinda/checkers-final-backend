@@ -69,7 +69,7 @@ def get_computer_move(board):
 
     if possible_moves:
         try:
-            eval_score, best_move = minimax(board, depth=5, maximizing_player=True)
+            eval_score, best_move = minimax(board, depth=3, maximizing_player=True)
             if best_move is None:
                 print("Minimax returned no best move. Choosing first available move.")
                 best_move = possible_moves[0]
