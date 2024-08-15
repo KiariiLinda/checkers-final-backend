@@ -35,6 +35,9 @@ def get_board():
     board = json.loads(game.board_state)
     current_turn = determine_turn(board)
     print_board(board)
+    print(f"Current user: {current_user['username']} (ID: {current_user['id']})")
+    print(f"Current turn: {current_turn}")
+
     return jsonify({
         'message': f"Hi {current_user['username']}, this is your board", 
         'board': board,
@@ -71,7 +74,7 @@ def make_human_move():
         src_row, src_col = checkers_notation_to_coord(src)
         dest_row, dest_col = checkers_notation_to_coord(dest)
 
-        print("Initial board state:")
+        print(f"Initial board state for user {current_user['username']} (ID: {current_user['id']}):")
         print_board(board)
 
         # Apply human move
@@ -110,6 +113,8 @@ def make_human_move():
 
         # Commit all changes to the database
         db.session.commit()
+        print(f"Human move made by user: {current_user['username']} (ID: {current_user['id']})")
+        print(f"Move: {data['src']} to {data['dest']}")
 
         return jsonify({
             'message': 'Human move made successfully', 
@@ -121,7 +126,7 @@ def make_human_move():
         })
 
     except Exception as e:
-        print(f"Error in make_human_move: {str(e)}")
+        print(f"Error in make_human_move for user {current_user['username']} (ID: {current_user['id']}): {str(e)}")
         db.session.rollback()  # Rollback in case of error
         return jsonify({'message': 'An error occurred while making the human move'}), 500
 
@@ -152,6 +157,7 @@ def make_computer_move():
         capture_occurred = False
 
         if computer_move:
+            print(f"Computer move for user: {current_user['username']} (ID: {current_user['id']})")
             print(f"Computer move: {checkers_notation}")
             try:
                 board, capture_occurred = make_move(board, computer_move)
@@ -159,15 +165,15 @@ def make_computer_move():
                 print(f"Error in make_move: {str(e)}")
                 return jsonify({'message': f'Error in computer move: {str(e)}'}), 400
             except Exception as e:
-                print(f"Unexpected error in make_move: {str(e)}")
+                print(f"Unexpected error in make_move for user {current_user['username']} (ID: {current_user['id']}): {str(e)}")
                 return jsonify({'message': f'Unexpected error in computer move: {str(e)}'}), 500
 
-            print(f"Computer capture: {capture_occurred}")
-            print("Board after computer move:")
+            print(f"Computer capture for user {current_user['username']} (ID: {current_user['id']}): {capture_occurred}")
+            print(f"Board after computer move for user {current_user['username']} (ID: {current_user['id']}):")
             print_board(board)
             computer_moves.append(checkers_notation)
         else:
-            print("No valid computer move found")
+            print(f"No valid computer move found for user: {current_user['username']} (ID: {current_user['id']})")
             return jsonify({
                 'message': 'No valid computer move found. The game may be over.',
                 'game_over': True,
@@ -212,7 +218,7 @@ def make_computer_move():
         })
 
     except Exception as e:
-        print(f"Error in make_computer_move: {str(e)}")
+        print(f"Error in make_computer_move for user {current_user['username']} (ID: {current_user['id']}): {str(e)}")
         return jsonify({'message': 'An error occurred while making the computer move'}), 500
 
 @game_blueprint.route("/game/possible_moves", methods=["GET"])
