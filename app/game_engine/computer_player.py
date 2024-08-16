@@ -169,24 +169,6 @@ def get_all_possible_moves(board, player):
                         moves.append(((row, col), (jump_row, jump_col)))
     return moves
 
-def get_possible_moves(board, row, col):
-    moves = []
-    directions = [(1, -1), (1, 1)] if board[row][col] == 'c' else [(-1, -1), (-1, 1)]
-    
-    for dx, dy in directions:
-        new_row, new_col = row + dx, col + dy
-        if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == ' ':
-            moves.append(((row, col), (new_row, new_col)))
-        
-        # Check for captures
-        jump_row, jump_col = new_row + dx, new_col + dy
-        if (0 <= jump_row < 8 and 0 <= jump_col < 8 and
-            board[new_row][new_col] != ' ' and
-            board[new_row][new_col] != board[row][col] and
-            board[jump_row][jump_col] == ' '):
-            moves.append(((row, col), (jump_row, jump_col)))
-    
-    return moves
 
 def make_move(board, move):
     new_board = copy.deepcopy(board)
