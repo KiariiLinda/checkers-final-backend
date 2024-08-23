@@ -1,0 +1,44 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "app.py",  
+        "use": "@vercel/python"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/game/board",
+        "methods": ["GET"],
+        "dest": "app.py"
+      },
+      {
+        "src": "/game/make_human_move",
+        "methods": ["PUT"],
+        "dest": "app.py"
+      },
+      {
+        "src": "/game/make_computer_move",
+        "methods": ["GET"],
+        "dest": "app.py"
+      },
+      {
+        "src": "/game/possible_moves",
+        "methods": ["GET"],
+        "dest": "app.py"
+      },
+      {
+        "src": "/game/reset",
+        "methods": ["POST"],
+        "dest": "app.py"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "app.py"
+      }
+    ],
+    "env": {
+      "PYTHON_VERSION": "3.9" 
+    }
+  }
+  
